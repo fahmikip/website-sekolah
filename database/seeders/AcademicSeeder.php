@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AcademicYear;
+use App\Models\Alumnus;
 use App\Models\Classroom;
 use App\Models\Curriculum;
 use App\Models\Level;
@@ -10,10 +11,13 @@ use App\Models\ParentProfile;
 use App\Models\Phase;
 use App\Models\Schedule;
 use App\Models\Semester;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class AcademicSeeder extends Seeder
 {
@@ -45,10 +49,36 @@ class AcademicSeeder extends Seeder
                 $parent->students()->syncWithoutDetaching([$student->id => ['is_primary' => true]]);
             }
         }
+        foreach (range(1, 5) as $i) {
+            Staff::firstOrCreate(['employee_number' => 'TENDIK'.str_pad((string) $i, 3, '0', STR_PAD_LEFT)], ['name' => 'Tenaga Kependidikan '.$i, 'gender' => $i % 2 ? 'L' : 'P', 'position' => $i === 1 ? 'Kepala Tata Usaha' : 'Staf Tata Usaha', 'employment_status' => 'Tetap', 'education' => 'S1', 'status' => 'active']);
+        }
+        $firstParent = ParentProfile::first();
+        if ($firstParent) {
+            $firstParent->students()->syncWithoutDetaching([Student::find(2)->id => ['is_primary' => false]]);
+        }
+        foreach (range(1, 10) as $i) {
+            Alumnus::firstOrCreate(['nis' => 'ALUM'.str_pad((string) $i, 4, '0', STR_PAD_LEFT)], ['name' => 'Alumni '.$i, 'graduation_year' => 2025, 'further_education' => 'Perguruan Tinggi', 'publication_consent' => true]);
+        }
         foreach ($subjects as $i => $subject) {
             $teacher = $teachers[$i];
             $teacher->subjects()->syncWithoutDetaching([$subject->id => ['academic_year_id' => $year->id]]);
             Schedule::firstOrCreate(['academic_year_id' => $year->id, 'semester_id' => $semester->id, 'classroom_id' => $classes[$i % $classes->count()]->id, 'subject_id' => $subject->id, 'teacher_id' => $teacher->id, 'day_of_week' => ($i % 5) + 1], ['starts_at' => '07:00:00', 'ends_at' => '08:30:00', 'room' => 'Ruang '.(($i % 6) + 1)]);
         }
+
+        $teacherUser = User::updateOrCreate(['email' => 'guru@example.test'], ['name' => $teachers->first()->name, 'password' => Hash::make('password'), 'email_verified_at' => now()]);
+        $teacherUser->syncRoles(['Guru']);
+        $teachers->first()->update(['user_id' => $teacherUser->id]);
+        $student = Student::first();
+        $studentUser = User::updateOrCreate(['email' => 'siswa@example.test'], ['name' => $student->name, 'password' => Hash::make('password'), 'email_verified_at' => now()]);
+        $studentUser->syncRoles(['Siswa']);
+        $student->update(['user_id' => $studentUser->id]);
+        $parent = $student->parents()->first();
+        if ($parent) {
+            $parentUser = User::updateOrCreate(['email' => 'orangtua@example.test'], ['name' => $parent->name, 'password' => Hash::make('password'), 'email_verified_at' => now()]);
+            $parentUser->syncRoles(['Orang Tua']);
+            $parent->update(['user_id' => $parentUser->id]);
+        }
+        $principal = User::updateOrCreate(['email' => 'kepalasekolah@example.test'], ['name' => 'Kepala Sekolah', 'password' => Hash::make('password'), 'email_verified_at' => now()]);
+        $principal->syncRoles(['Kepala Sekolah']);
     }
 }

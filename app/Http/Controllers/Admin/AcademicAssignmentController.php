@@ -16,6 +16,8 @@ class AcademicAssignmentController extends Controller
 {
     public function index()
     {
+        abort_unless(request()->user()->can('edit_academic'), 403);
+
         return view('admin.academic.assignments', ['academicYears' => AcademicYear::orderByDesc('starts_on')->get(), 'classrooms' => Classroom::withCount('students')->get(), 'students' => Student::where('status', 'active')->orderBy('name')->get(), 'parents' => ParentProfile::orderBy('name')->get(), 'teachers' => Teacher::where('status', 'active')->orderBy('name')->get(), 'subjects' => Subject::where('is_active', true)->orderBy('name')->get()]);
     }
 

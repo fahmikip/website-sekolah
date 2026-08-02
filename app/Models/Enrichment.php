@@ -6,5 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Enrichment extends Model
 {
-    //
+    protected $guarded = ['id'];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
 }

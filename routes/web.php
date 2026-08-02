@@ -3,15 +3,23 @@
 use App\Http\Controllers\Admin\AcademicAssignmentController;
 use App\Http\Controllers\Admin\AcademicExportController;
 use App\Http\Controllers\Admin\AcademicMasterController;
+use App\Http\Controllers\Admin\AssessmentConfigurationController;
+use App\Http\Controllers\Admin\AssessmentController;
 use App\Http\Controllers\Admin\ContentModuleController;
 use App\Http\Controllers\Admin\GalleryItemController;
+use App\Http\Controllers\Admin\InterventionController;
 use App\Http\Controllers\Admin\NewsCategoryController as AdminNewsCategoryController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
+use App\Http\Controllers\Admin\ReportCardController;
 use App\Http\Controllers\Admin\SchoolProfileController;
+use App\Http\Controllers\Admin\ScoreEntryController;
+use App\Http\Controllers\Admin\TimetableController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicContentController;
 use App\Http\Controllers\PublicSiteController;
+use App\Http\Controllers\ReportVerificationController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +30,7 @@ Route::get('/konten/{module}', [PublicContentController::class, 'index'])->name(
 Route::get('/konten/{module}/{slug}', [PublicContentController::class, 'show'])->name('content.show');
 Route::get('/unduhan/{download}', [PublicContentController::class, 'download'])->name('downloads.file')->middleware('throttle:30,1');
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('/verifikasi-rapor/{token}', ReportVerificationController::class)->name('reports.verify')->middleware('throttle:30,1');
 
 Route::get('/dashboard', fn () => view('admin.dashboard'))->middleware(['auth', 'verified', 'permission:view_dashboard'])->name('dashboard');
 
@@ -45,7 +54,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::put('/content/{module}/{id}', [ContentModuleController::class, 'update'])->name('content.update');
         Route::delete('/content/{module}/{id}', [ContentModuleController::class, 'destroy'])->name('content.destroy');
     });
-    Route::middleware('permission:manage_academic')->group(function () {
+    Route::middleware('permission:view_academic|manage_academic')->group(function () {
+        Route::get('/timetable', TimetableController::class)->name('academic.timetable');
         Route::get('/academic-assignments', [AcademicAssignmentController::class, 'index'])->name('academic.assignments');
         Route::post('/academic-assignments', [AcademicAssignmentController::class, 'store'])->name('academic.assignments.store');
         Route::get('/academic-export/{type}', [AcademicExportController::class, 'export'])->name('academic.export');
@@ -57,9 +67,46 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::put('/academic/{module}/{id}', [AcademicMasterController::class, 'update'])->name('academic.update');
         Route::delete('/academic/{module}/{id}', [AcademicMasterController::class, 'destroy'])->name('academic.destroy');
     });
+    Route::middleware('permission:manage_assessment')->group(function () {
+        Route::resource('assessments', AssessmentController::class)->except('show');
+        Route::get('/assessment/interventions/{module}', [InterventionController::class, 'index'])->name('assessment.interventions.index');
+        Route::get('/assessment/interventions/{module}/create', [InterventionController::class, 'create'])->name('assessment.interventions.create');
+        Route::post('/assessment/interventions/{module}', [InterventionController::class, 'store'])->name('assessment.interventions.store');
+        Route::get('/assessment/interventions/{module}/{id}/edit', [InterventionController::class, 'edit'])->name('assessment.interventions.edit');
+        Route::put('/assessment/interventions/{module}/{id}', [InterventionController::class, 'update'])->name('assessment.interventions.update');
+        Route::delete('/assessment/interventions/{module}/{id}', [InterventionController::class, 'destroy'])->name('assessment.interventions.destroy');
+        Route::get('/assessment/config/{module}', [AssessmentConfigurationController::class, 'index'])->name('assessment.config.index');
+        Route::get('/assessment/config/{module}/create', [AssessmentConfigurationController::class, 'create'])->name('assessment.config.create');
+        Route::post('/assessment/config/{module}', [AssessmentConfigurationController::class, 'store'])->name('assessment.config.store');
+        Route::get('/assessment/config/{module}/{id}/edit', [AssessmentConfigurationController::class, 'edit'])->name('assessment.config.edit');
+        Route::put('/assessment/config/{module}/{id}', [AssessmentConfigurationController::class, 'update'])->name('assessment.config.update');
+        Route::delete('/assessment/config/{module}/{id}', [AssessmentConfigurationController::class, 'destroy'])->name('assessment.config.destroy');
+    });
+    Route::get('/assessment/scores', [ScoreEntryController::class, 'index'])->middleware('permission:input_scores')->name('assessment.scores.index');
+    Route::get('/assessment/scores/{assessment}', [ScoreEntryController::class, 'edit'])->middleware('permission:input_scores')->name('assessment.scores.edit');
+    Route::put('/assessment/scores/{assessment}', [ScoreEntryController::class, 'update'])->middleware('permission:input_scores')->name('assessment.scores.update');
+    Route::post('/assessment/scores/{assessment}/autosave', [ScoreEntryController::class, 'autosave'])->middleware(['permission:input_scores', 'throttle:120,1'])->name('assessment.scores.autosave');
+    Route::get('/assessment/scores/{assessment}/export', [ScoreEntryController::class, 'export'])->middleware('permission:input_scores')->name('assessment.scores.export');
+    Route::post('/assessment/scores/{assessment}/import', [ScoreEntryController::class, 'import'])->middleware('permission:input_scores')->name('assessment.scores.import');
+    Route::get('/assessment/analysis/{assessment}/export', [ScoreEntryController::class, 'exportAnalysis'])->middleware('permission:manage_assessment')->name('assessment.analysis.export');
+    Route::patch('/assessment/student-scores/{studentScore}/status', [ScoreEntryController::class, 'transition'])->name('assessment.scores.transition');
+    Route::get('/assessment/analysis/{assessment}', [ScoreEntryController::class, 'analysis'])->middleware('permission:manage_assessment')->name('assessment.analysis');
+    Route::middleware('permission:manage_report_cards')->group(function () {
+        Route::get('/reports', [ReportCardController::class, 'index'])->name('reports.index');
+        Route::post('/reports/generate', [ReportCardController::class, 'generate'])->name('reports.generate');
+        Route::get('/reports/{reportCard}', [ReportCardController::class, 'show'])->name('reports.show');
+        Route::put('/reports/{reportCard}', [ReportCardController::class, 'update'])->name('reports.update');
+        Route::patch('/reports/{reportCard}/status', [ReportCardController::class, 'transition'])->name('reports.transition');
+        Route::get('/reports/{reportCard}/print', [ReportCardController::class, 'print'])->name('reports.print');
+        Route::get('/reports/{reportCard}/pdf', [ReportCardController::class, 'pdf'])->name('reports.pdf');
+    });
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/portal/guru', [PortalController::class, 'teacher'])->middleware('permission:view_teacher_portal')->name('portal.teacher');
+    Route::get('/portal/siswa', [PortalController::class, 'student'])->middleware('permission:view_student_portal')->name('portal.student');
+    Route::get('/portal/orang-tua/{student?}', [PortalController::class, 'parent'])->middleware('permission:view_parent_portal')->name('portal.parent.child');
+    Route::get('/portal/kepala-sekolah', [PortalController::class, 'principal'])->middleware('permission:view_principal_dashboard')->name('portal.principal');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

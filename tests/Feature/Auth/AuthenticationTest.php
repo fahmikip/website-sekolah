@@ -15,6 +15,9 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+        $response->assertSee('Selamat datang kembali');
+        $response->assertSee('/manifest.webmanifest', false);
+        $response->assertSee('Masuk ke Portal');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void

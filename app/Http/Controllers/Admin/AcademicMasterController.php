@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveAcademicMasterRequest;
 use App\Models\AcademicYear;
+use App\Models\Alumnus;
 use App\Models\Classroom;
 use App\Models\Curriculum;
 use App\Models\Level;
@@ -12,17 +13,22 @@ use App\Models\ParentProfile;
 use App\Models\Phase;
 use App\Models\Schedule;
 use App\Models\Semester;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class AcademicMasterController extends Controller
 {
-    private const MODULES = ['academic-years' => [AcademicYear::class, 'Tahun Ajaran', 'name'], 'semesters' => [Semester::class, 'Semester', 'name'], 'curricula' => [Curriculum::class, 'Kurikulum', 'name'], 'phases' => [Phase::class, 'Fase', 'name'], 'levels' => [Level::class, 'Jenjang', 'name'], 'classrooms' => [Classroom::class, 'Rombel', 'name'], 'subjects' => [Subject::class, 'Mata Pelajaran', 'name'], 'teachers' => [Teacher::class, 'Guru', 'name'], 'students' => [Student::class, 'Siswa', 'name'], 'parents' => [ParentProfile::class, 'Orang Tua', 'name'], 'schedules' => [Schedule::class, 'Jadwal', 'room']];
+    private const MODULES = ['academic-years' => [AcademicYear::class, 'Tahun Ajaran', 'name'], 'semesters' => [Semester::class, 'Semester', 'name'], 'curricula' => [Curriculum::class, 'Kurikulum', 'name'], 'phases' => [Phase::class, 'Fase', 'name'], 'levels' => [Level::class, 'Jenjang', 'name'], 'classrooms' => [Classroom::class, 'Rombel', 'name'], 'subjects' => [Subject::class, 'Mata Pelajaran', 'name'], 'teachers' => [Teacher::class, 'Guru', 'name'], 'staff' => [Staff::class, 'Tenaga Kependidikan', 'name'], 'students' => [Student::class, 'Siswa', 'name'], 'parents' => [ParentProfile::class, 'Orang Tua', 'name'], 'alumni' => [Alumnus::class, 'Alumni', 'name'], 'schedules' => [Schedule::class, 'Jadwal', 'room']];
 
     public function index(string $module)
     {
+        abort_unless(request()->user()->can('view_academic'), 403);
         [$model,$label,$title] = $this->config($module);
         $items = $model::query()->when(request('search'), fn ($q, $s) => $q->where($title, 'like', "%{$s}%"))->latest()->paginate(15)->withQueryString();
 
@@ -31,6 +37,7 @@ class AcademicMasterController extends Controller
 
     public function create(string $module)
     {
+        abort_unless(request()->user()->can('create_academic'), 403);
         [, $label] = $this->config($module);
 
         return view('admin.academic.form', [...$this->options(), 'module' => $module, 'label' => $label]);
@@ -38,6 +45,7 @@ class AcademicMasterController extends Controller
 
     public function edit(string $module, int $id)
     {
+        abort_unless(request()->user()->can('edit_academic'), 403);
         [$model,$label] = $this->config($module);
 
         return view('admin.academic.form', [...$this->options(), 'module' => $module, 'label' => $label, 'item' => $model::findOrFail($id)]);
@@ -47,9 +55,14 @@ class AcademicMasterController extends Controller
     {
         [$model] = $this->config($module);
         $data = $request->validated();
-        if ($module === 'schedules') {
-            $this->ensureNoConflict($data);
-        }$model::create($data);
+        $data = $this->storeFiles($module, $data);
+        DB::transaction(function () use ($module, $model, $data) {
+            if ($module === 'schedules') {
+                $this->ensureNoConflict($data);
+            }
+            $this->deactivateActivePeriod($module, $data);
+            $model::create($data);
+        });
 
         return redirect()->route('admin.academic.index', $module)->with('success', 'Data akademik ditambahkan.');
     }
@@ -59,17 +72,29 @@ class AcademicMasterController extends Controller
         [$model] = $this->config($module);
         $item = $model::findOrFail($id);
         $data = $request->validated();
-        if ($module === 'schedules') {
-            $this->ensureNoConflict($data, $id);
-        }$item->update($data);
+        $data = $this->storeFiles($module, $data, $item);
+        DB::transaction(function () use ($module, $data, $id, $item) {
+            if ($module === 'schedules') {
+                $this->ensureNoConflict($data, $id);
+            }
+            $this->deactivateActivePeriod($module, $data, $id);
+            $item->update($data);
+        });
 
         return redirect()->route('admin.academic.index', $module)->with('success', 'Data akademik diperbarui.');
     }
 
     public function destroy(string $module, int $id)
     {
+        abort_unless(request()->user()->can('delete_academic'), 403);
         [$model] = $this->config($module);
-        $model::findOrFail($id)->delete();
+        $item = $model::findOrFail($id);
+        foreach (['photo_path', 'document_path'] as $path) {
+            if ($item->{$path} ?? null) {
+                Storage::disk('public')->delete($item->{$path});
+            }
+        }
+        $item->delete();
 
         return back()->with('success', 'Data dihapus.');
     }
@@ -83,7 +108,7 @@ class AcademicMasterController extends Controller
 
     private function options(): array
     {
-        return ['academicYears' => AcademicYear::orderByDesc('starts_on')->get(), 'semesters' => Semester::all(), 'curricula' => Curriculum::all(), 'phases' => Phase::all(), 'levels' => Level::orderBy('sort_order')->get(), 'classrooms' => Classroom::all(), 'subjects' => Subject::all(), 'teachers' => Teacher::where('status', 'active')->get()];
+        return ['academicYears' => AcademicYear::orderByDesc('starts_on')->get(), 'semesters' => Semester::all(), 'curricula' => Curriculum::all(), 'phases' => Phase::all(), 'levels' => Level::orderBy('sort_order')->get(), 'classrooms' => Classroom::all(), 'subjects' => Subject::all(), 'teachers' => Teacher::where('status', 'active')->get(), 'students' => Student::orderBy('name')->get()];
     }
 
     private function ensureNoConflict(array $data, ?int $ignore = null): void
@@ -96,5 +121,29 @@ class AcademicMasterController extends Controller
         if ($teacher || $class || $room) {
             throw ValidationException::withMessages(['starts_at' => 'Jadwal bentrok dengan guru, kelas, atau ruangan pada waktu yang sama.']);
         }
+    }
+
+    private function storeFiles(string $module, array $data, ?object $item = null): array
+    {
+        foreach (['photo' => 'photo_path', 'document' => 'document_path'] as $input => $column) {
+            if (($data[$input] ?? null) instanceof UploadedFile) {
+                if ($item?->{$column}) {
+                    Storage::disk('public')->delete($item->{$column});
+                }
+                $data[$column] = $data[$input]->store("academic/{$module}", 'public');
+            }
+            unset($data[$input]);
+        }
+
+        return $data;
+    }
+
+    private function deactivateActivePeriod(string $module, array $data, ?int $ignore = null): void
+    {
+        if (! ($data['is_active'] ?? false) || ! in_array($module, ['academic-years', 'semesters'])) {
+            return;
+        }
+        $query = $module === 'academic-years' ? AcademicYear::query() : Semester::where('academic_year_id', $data['academic_year_id']);
+        $query->when($ignore, fn ($q) => $q->whereKeyNot($ignore))->update(['is_active' => false]);
     }
 }

@@ -21,7 +21,7 @@ class AcademicMasterTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, AcademicSeeder::class]);
         $admin = User::where('email', 'superadmin@example.test')->first();
-        foreach (['academic-years', 'semesters', 'curricula', 'phases', 'levels', 'classrooms', 'subjects', 'teachers', 'students', 'parents', 'schedules'] as $module) {
+        foreach (['academic-years', 'semesters', 'curricula', 'phases', 'levels', 'classrooms', 'subjects', 'teachers', 'staff', 'students', 'parents', 'alumni', 'schedules'] as $module) {
             $this->actingAs($admin)->get(route('admin.academic.index', $module))->assertOk();
         }
     }
@@ -49,5 +49,7 @@ class AcademicMasterTest extends TestCase
         $this->assertDatabaseCount('teachers', 10);
         $this->assertDatabaseCount('classrooms', 6);
         $this->assertDatabaseCount('subjects', 10);
+        $this->assertDatabaseCount('staff', 5);
+        $this->assertDatabaseCount('alumni', 10);
     }
 }

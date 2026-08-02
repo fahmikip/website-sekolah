@@ -1,0 +1,21 @@
+{
+  "name": "Smart School Information System",
+  "short_name": "Smart School",
+  "description": "Portal digital sekolah untuk guru, siswa, orang tua, dan pimpinan.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f1f5f9",
+  "theme_color": "#064e3b",
+  "lang": "id-ID",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {"src": "/icons/smart-school.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/icons/smart-school-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Dashboard", "short_name": "Dashboard", "url": "/dashboard", "icons": [{"src": "/icons/smart-school.svg", "sizes": "any", "type": "image/svg+xml"}]},
+    {"name": "Portal Siswa", "short_name": "Siswa", "url": "/portal/siswa", "icons": [{"src": "/icons/smart-school.svg", "sizes": "any", "type": "image/svg+xml"}]}
+  ]
+}

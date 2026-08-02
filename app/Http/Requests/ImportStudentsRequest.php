@@ -12,7 +12,7 @@ class ImportStudentsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('manage_academic') ?? false;
+        return $this->user()?->can('import_academic') ?? false;
     }
 
     /**
@@ -22,6 +22,6 @@ class ImportStudentsRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']];
+        return ['file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120']];
     }
 }
