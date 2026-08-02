@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $permissions = ['view_dashboard', 'manage_school_profile', 'manage_settings', 'manage_navigation', 'manage_users', 'manage_roles'];
+        $permissions = ['view_dashboard', 'manage_school_profile', 'manage_settings', 'manage_navigation', 'manage_users', 'manage_roles', 'view_news', 'create_news', 'edit_news', 'delete_news', 'manage_news_categories'];
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
@@ -45,7 +45,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ] as $setting) {
             Setting::firstOrCreate(['key' => $setting['key']], $setting);
         }
-        foreach ([['Beranda', '/', 10], ['Profil', '#profil', 20], ['Program', '#program', 30], ['Berita', '#berita', 40], ['Kontak', '#kontak', 50]] as [$label,$url,$order]) {
+        foreach ([['Beranda', '/', 10], ['Profil', '/#profil', 20], ['Program', '/#program', 30], ['Berita', '/berita', 40], ['Kontak', '/#kontak', 50]] as [$label,$url,$order]) {
             Menu::firstOrCreate(['label' => $label, 'location' => 'header'], ['url' => $url, 'sort_order' => $order, 'is_active' => true]);
         }
     }

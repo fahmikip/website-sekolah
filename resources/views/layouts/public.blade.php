@@ -4,6 +4,12 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? ($school?->name ?? config('app.name')) }}</title>
     <meta name="description" content="{{ $description ?? $school?->short_description }}">
+    <link rel="canonical" href="{{ $canonical ?? url()->current() }}">
+    <meta property="og:title" content="{{ $title ?? ($school?->name ?? config('app.name')) }}">
+    <meta property="og:description" content="{{ $description ?? $school?->short_description }}">
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
+    @isset($ogImage)<meta property="og:image" content="{{ $ogImage }}">@endisset
     <meta name="theme-color" content="#052e16">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
