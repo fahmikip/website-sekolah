@@ -18,12 +18,13 @@ class NewsManagementTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = User::where('email', 'superadmin@example.test')->firstOrFail();
         $category = NewsCategory::factory()->create();
-        $payload = ['news_category_id' => $category->id, 'title' => 'Kegiatan Literasi Digital', 'content' => 'Isi berita sekolah.', 'status' => 'published', 'is_featured' => 1];
+        $payload = ['news_category_id' => $category->id, 'title' => 'Kegiatan Literasi Digital', 'content' => 'Isi berita sekolah.', 'status' => 'published', 'is_featured' => 1, 'tags' => 'akademik, literasi'];
 
         $this->actingAs($admin)->post(route('admin.news.store'), $payload)->assertRedirect(route('admin.news.index'));
         $news = News::firstOrFail();
         $this->assertSame('kegiatan-literasi-digital', $news->slug);
         $this->assertNotNull($news->published_at);
+        $this->assertCount(2, $news->tags);
 
         $this->actingAs($admin)->put(route('admin.news.update', $news), [...$payload, 'title' => 'Kegiatan Literasi Digital Terbaru'])->assertRedirect(route('admin.news.index'));
         $this->assertSame('Kegiatan Literasi Digital Terbaru', $news->refresh()->title);

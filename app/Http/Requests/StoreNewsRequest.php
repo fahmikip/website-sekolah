@@ -31,6 +31,7 @@ class StoreNewsRequest extends FormRequest
             'is_featured' => ['nullable', 'boolean'], 'published_at' => ['nullable', 'date'],
             'meta_title' => ['nullable', 'string', 'max:255'], 'meta_description' => ['nullable', 'string', 'max:500'],
             'canonical_url' => ['nullable', 'url', 'max:255'], 'og_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'tags' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

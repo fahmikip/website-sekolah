@@ -36,7 +36,7 @@ class NewsController extends Controller
      */
     public function store(StoreNewsRequest $request)
     {
-        $this->service->store($request->safe()->except(['featured_image', 'og_image']), $request->user()->id, $request->file('featured_image'), $request->file('og_image'));
+        $this->service->store($request->safe()->except(['featured_image', 'og_image', 'tags']), $request->user()->id, $request->file('featured_image'), $request->file('og_image'), (string) $request->string('tags'));
 
         return redirect()->route('admin.news.index')->with('success', 'Berita berhasil dibuat.');
     }
@@ -62,7 +62,7 @@ class NewsController extends Controller
      */
     public function update(UpdateNewsRequest $request, News $news)
     {
-        $this->service->update($news, $request->safe()->except(['featured_image', 'og_image']), $request->file('featured_image'), $request->file('og_image'));
+        $this->service->update($news, $request->safe()->except(['featured_image', 'og_image', 'tags']), $request->file('featured_image'), $request->file('og_image'), (string) $request->string('tags'));
 
         return redirect()->route('admin.news.index')->with('success', 'Berita berhasil diperbarui.');
     }

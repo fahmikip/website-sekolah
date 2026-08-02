@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\BannerFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Banner extends Model
+{
+    /** @use HasFactory<BannerFactory> */
+    use HasFactory;
+
+    protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean', 'starts_at' => 'datetime', 'ends_at' => 'datetime'];
+    }
+}

@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $permissions = ['view_dashboard', 'manage_school_profile', 'manage_settings', 'manage_navigation', 'manage_users', 'manage_roles', 'view_news', 'create_news', 'edit_news', 'delete_news', 'manage_news_categories'];
+        $permissions = ['view_dashboard', 'manage_school_profile', 'manage_settings', 'manage_navigation', 'manage_users', 'manage_roles', 'view_news', 'create_news', 'edit_news', 'delete_news', 'manage_news_categories', 'manage_cms', 'manage_academic'];
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }

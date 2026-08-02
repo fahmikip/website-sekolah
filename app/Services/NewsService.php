@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\News;
+use App\Models\Tag;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -11,23 +12,33 @@ use Illuminate\Validation\ValidationException;
 
 class NewsService
 {
-    public function store(array $data, int $authorId, ?UploadedFile $featuredImage = null, ?UploadedFile $ogImage = null): News
+    public function store(array $data, int $authorId, ?UploadedFile $featuredImage = null, ?UploadedFile $ogImage = null, ?string $tags = null): News
     {
-        return DB::transaction(function () use ($data, $authorId, $featuredImage, $ogImage) {
+        return DB::transaction(function () use ($data, $authorId, $featuredImage, $ogImage, $tags) {
             $data['author_id'] = $authorId;
             $data = $this->prepare($data, null, $featuredImage, $ogImage);
 
-            return News::create($data);
+            $news = News::create($data);
+            $this->syncTags($news, $tags);
+
+            return $news;
         });
     }
 
-    public function update(News $news, array $data, ?UploadedFile $featuredImage = null, ?UploadedFile $ogImage = null): News
+    public function update(News $news, array $data, ?UploadedFile $featuredImage = null, ?UploadedFile $ogImage = null, ?string $tags = null): News
     {
-        return DB::transaction(function () use ($news, $data, $featuredImage, $ogImage) {
+        return DB::transaction(function () use ($news, $data, $featuredImage, $ogImage, $tags) {
             $news->update($this->prepare($data, $news, $featuredImage, $ogImage));
+            $this->syncTags($news, $tags);
 
             return $news->refresh();
         });
+    }
+
+    private function syncTags(News $news, ?string $value): void
+    {
+        $ids = collect(explode(',', $value ?? ''))->map(fn ($tag) => trim($tag))->filter()->unique()->take(15)->map(fn ($name) => Tag::firstOrCreate(['slug' => Str::slug($name)], ['name' => $name])->id);
+        $news->tags()->sync($ids);
     }
 
     public function delete(News $news): void

@@ -10,6 +10,7 @@
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
     @isset($ogImage)<meta property="og:image" content="{{ $ogImage }}">@endisset
+    <script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'School','name'=>$school?->name,'url'=>route('home'),'email'=>$school?->email,'telephone'=>$school?->phone,'address'=>['@type'=>'PostalAddress','streetAddress'=>$school?->address,'addressLocality'=>$school?->city,'addressRegion'=>$school?->province]], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
     <meta name="theme-color" content="#052e16">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
