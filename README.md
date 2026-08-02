@@ -2,6 +2,18 @@
 
 Fondasi aplikasi sekolah modern berbasis Laravel 12. Phase 1 mencakup autentikasi, RBAC, profil sekolah, settings, navigasi database, dashboard admin, layout publik, upload tervalidasi, dan test. Homepage awal Phase 2 juga sudah tersedia sebagai landasan CMS.
 
+## Pratinjau aplikasi
+
+Seluruh gambar berikut merupakan tangkapan layar halaman penuh dalam mode desktop dan mobile.
+
+| Halaman | Desktop | Mobile |
+| --- | --- | --- |
+| Beranda | <img src="docs/screenshots/01-home-desktop.png" alt="Beranda mode desktop" width="520"> | <img src="docs/screenshots/01-home-mobile.png" alt="Beranda mode mobile" width="220"> |
+| Berita | <img src="docs/screenshots/02-news-desktop.png" alt="Berita mode desktop" width="520"> | <img src="docs/screenshots/02-news-mobile.png" alt="Berita mode mobile" width="220"> |
+| Agenda | <img src="docs/screenshots/03-agenda-desktop.png" alt="Agenda mode desktop" width="520"> | <img src="docs/screenshots/03-agenda-mobile.png" alt="Agenda mode mobile" width="220"> |
+| Prestasi | <img src="docs/screenshots/04-achievements-desktop.png" alt="Prestasi mode desktop" width="520"> | <img src="docs/screenshots/04-achievements-mobile.png" alt="Prestasi mode mobile" width="220"> |
+| Login | <img src="docs/screenshots/05-login-desktop.png" alt="Login mode desktop" width="520"> | <img src="docs/screenshots/05-login-mobile.png" alt="Login mode mobile" width="220"> |
+
 ## Kebutuhan sistem
 
 - PHP 8.3+ (`bcmath`, `curl`, `dom`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `zip`)
